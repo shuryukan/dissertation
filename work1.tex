@@ -1,0 +1,155 @@
+\section{The LIUM SpkDiarization Toolkit}
+
+\doublespacing
+
+
+In order to perform Diarization on any test podcast, the LIUM SpkDiarization toolkit needed to be run in such a way as to perform Single-show Broadcast News Diarization. A bash shell script, provided on the LIUM website \cite{LIUMweb}, listed the necessary Java commands in order to perform Diarization on one broadcast news podcast, with no training data. The only input to this script is the podcast .WAV file. The commands were as follows:
+
+\begin{itemize}
+\singlespacing
+\item{Speech/Music/Silence Segmentation (short-named PMS)}
+\item{GLR Based Segmentation}
+\item{Linear Clustering}
+\item{Hierarchical Clustering}
+\item{Initialize GMM}
+\item{EM computation}
+\item{Viterbi Decoding}
+\item{Adjust segment boundaries}
+\item{Filter Spk Segmentation According to PMS Segmentation}
+\item{Split segment longer than 20s}
+\item{Set gender and bandwith}
+\item{CLR clustering}
+\end{itemize}
+
+\doublespacing
+\noindent The result of all this, is a .seg file. Each line in this file corresponds to a segment of speech. For example:
+
+\bgroup
+\singlespacing
+\def\arraystretch{1.5}
+\begin{center}
+\begin{tabular}{| c | c | c | c | c | c | c | c |}
+\hline
+ show & 1 & 0 & 480 & F & S & U & S4 \\
+\hline
+\end{tabular}
+\end{center}
+\egroup
+
+\doublespacing
+\noindent Where:
+
+\begin{enumerate}
+\singlespacing
+\item{show = The name of the input file, without the extension.}
+\item{1 = The channel number. This was always kept at 1.}
+\item{0 = The start of the segment in centiseconds.}
+\item{480 = The duration of the segment in centiseconds.}
+\item{F = The identified gender of the speaker; F, M or U (unknown)}
+\item{S = The type of band; S for studio, T for telephone.}
+\item{U = The type of environment i.e. music, speech only, etc.}
+\item{S4 = The speaker label.}
+\end{enumerate}
+
+\doublespacing
+\noindent Comments were denoted with two semi-colons (;;). This became important to note when rearranging the format of the .seg files.
+
+\subsection{Evaluation Methods}
+
+\doublespacing
+The Diarization Error Rate, as described in (SECTION HERE), is the standard that is used to measure accuracy of a Speaker Diarization system such as LIUM. The segmentation scoring tool described requires the following for each segment, in a Rich Transcription Time Marked (.RTTM) file:
+
+\bgroup
+\singlespacing
+\def\arraystretch{1.5}
+\begin{center}
+\begin{tabular}{| c | c | c | c | c | c | c | c |}
+\hline
+ SPEAKER & File & Ch & Beg\_Time & Dur & <NA> <NA> & Spkr\_Label & <NA> <NA> \\
+\hline
+\end{tabular}
+\end{center}
+\egroup
+
+\doublespacing
+\noindent Where:
+
+\begin{enumerate}
+\singlespacing
+\item{SPEAKER = A tag indicating that the segment contains information about a single segment of speech belonging to one individual.}
+\item{File = The name of the considered file.}
+\item{Ch = Refers to the channel (kept at 1, as seen previously for LIUM).}
+\item{Beg\_Time = The beginning time of the segment, in seconds, measured from the start of the file.}
+\item{Dur = The duration of the segment, in seconds.}
+\item{Spkr\_Label = The label assigned to the speaker present in the considered segment.}
+\end{enumerate}
+
+\doublespacing
+\noindent Note here that the ``<NA>'' tags simply represent fields that are unused. Any time value in seconds must have a `.' decimal delimiter. \par
+The freely available ``md-eval-vXX.pl'' Perl script (REFERENCE), where ``XX'' represents the version number, could be executed with the following bash shell command:
+
+\begin{lstlisting}
+perl md-eval-v21.pl -c 0.25 -r <REFERENCE>.rttm -s <SYSTEM_OUTPUT>.rttm
+\end{lstlisting}
+
+\noindent This would then compute the Diarization Error Rate and print out all pertinent information about each component of the DER.
+
+\section{Testing LIUM on Fixed Datasets}
+
+The first set of data that LIUM was tested on consisted of fifty segments of speech from well known Irish radio presenters, lasting 30 seconds each. Half of these presenters were male, and the other half, female. A 25 minute podcast made up entirely out of this data was then used to test LIUM. A reference file was created following the aforementioned .RTTM format, labelling speaker time for every 30-second segment. \par
+The output .seg file from LIUM was converted into .RTTM format by appending the AWK command shown below to the bash shell script for single-show Diarization. Firstly, the comment delimiter (;;) was defined, and then each variable could be converted accordingly. The ``\$8'' here represents the speaker label, which was replaced by a ``\$5'' when only considering the error in gender detection. The ``\$show'' represented the base-name of the .wav file that the LIUM Diarization script was run on.
+
+\begin{lstlisting}
+awk '!/^;;/ {print "SPEAKER " $1 " " $2 " " ($3/ 100) " " ($4/ 100) " <NA> <NA> " $8 " 
+		<NA> <NA>"}' $show.c.3.seg > $show.rttm
+\end{lstlisting}
+
+\noindent The Albayzin Perl script could then be run on both .RTTM files, and the Diarization Error Rate calculated for speaker and gender-only scenarios.
+
+\subsection{Varying Age}
+
+The original data contained variation in the age of the speakers. LIUM was run on this test podcast, and the output was converted into .RTTM format. This small test showed that age difference had an impact in how a statistical speaker Diarization system would find it difficult to identify a speaker as the same from two segments of speech from when their age was different by about 10 years.
+
+\subsection{Static Age}
+
+In order to eliminate the varying factor of age in the speakers, five minutes of older speech segments, from when the presenters were younger, were removed from the made-up podcast data. LIUM was then run again on the new podcast without any variance in age.
+
+\section{Introducing the DCU Reference Data}
+
+As seen in (SECTION), the data from DCU was simplified so that each line contained the following:
+
+\bgroup
+\singlespacing
+\def\arraystretch{1.5}
+\begin{center}
+\begin{tabular}{| c | c | c | c | c | c | c | c | c |}
+\hline
+ show & week & day & radio & name & gender & start & end & dur \\
+\hline
+\end{tabular}
+\end{center}
+\egroup
+
+\noindent The following AWK command could then be run to convert this from its raw .csv format into .RTTM, with an extra ``.ref'' tag to denote that this is the reference file for the Albayzin Perl script. As before, the ``\$5'' was replaced with ``\$6'' in order to measure error in gender detection.
+
+\begin{lstlisting}
+awk {print "SPEAKER " $show " 1 " $7 ".00 " $9 ".00 <NA> <NA> " $5 " <NA> <NA>"}'
+		$show.csv > $show.ref.rttm
+\end{lstlisting}
+
+\noindent 
+
+\section{Fixing the Reference Data}
+
+\subsection{Adverts}
+
+\subsection{No Adverts}
+
+\section{Exploitation of DCU Data to Remove Adverts}
+
+\section{Automatic Non-news Detection Algorithm}
+
+\subsection{Root Mean Square Distance}
+RMS distance
+\subsection{Arithmetic-Harmonic Sphericity Distance}
+AHS distance

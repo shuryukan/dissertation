@@ -1,0 +1,103 @@
+\doublespacing
+In this chapter, the present state of the art of diarization methods are discussed, highlighting areas pertinent to the primary purposes of this project. Other problems involved in broadcast news radio diarization, such as automatic removal of non-news segments, are also discussed.
+
+\singlespacing
+\section{Speaker Diarization}
+
+\doublespacing
+In 2006, Sue Tranter and Doug Reynolds provided an overview of automatic speaker diarization systems. They defined diarization as ``the task of marking and categorising the audio sources within a spoken document'' \cite{tranter2006overview}. In their paper, they go on to outline the techniques commonly used for speaker diarization.  \par
+At the simplest level, diarization is described as the action of defining speech versus non-speech e.g. music, silence noise etc. Speaker diarization can be seen as a specification of this, where speaker changes are marked, and segments of speech (i.e. start and end times for parts of a speech document that mark transitions to or from non-speech segments, or between speaker segments) coming from the same speaker are labelled accordingly. \par
+The three primary domains for speaker diarization research, defined by Tranter and Reynolds, are broadcast news audio, recorded meetings and telephone conversations. In the NIST Rich Transcription speaker evaluations, speaker diarization systems have focused on broadcast news and meeting data. Speaker diarization systems are also designed taking into account the amount of prior information needed for training. \par
+In the case of broadcast news diarization, it is desirable for the system to have no prior information about the identity of speakers, and be able to perform diarization based on statistical reasoning methods applied to singular shows. Such systems are described by NIST \cite{NIST2006web}, under the Rich Transcription criteria for evaluation. \par
+
+\singlespacing
+\section{Diarization Systems Evaluation}
+
+\doublespacing
+Since 2003, the NIST Rich Transcription Evaluation \cite{NIST2006web} has outlined the criteria for measuring error in speaker diarization systems each year, with little change from 2006 onwards. The evaluation documents outlined that there must be a one-to-one mapping between system output speakers and reference speakers, and that each file (or podcast in our case) was to be considered separately. \par
+
+\singlespacing
+\subsection{Diarization Error Calculation}
+
+\doublespacing
+The error in speaker diarization, upon which to base all diarization systems, is defined as the fraction of speaker time that is not attributed correctly to a speaker. This error rate is then broken down into three major categories:
+
+\singlespacing
+\subsubsection{Speaker Error Time}
+
+\doublespacing
+Any time that is attributed to the wrong speaker is counted as speaker error time. This is calculated by the following summation:
+
+\singlespacing
+$$ \frac{\mathlarger{\mathlarger{\sum}}_{all\ segs}\ dur(seg) * \{\ min(\ N_{Ref}(seg),\ N_{Sys}(seg)\ )\ -\ N_{Correct}(seg)\ )\ \}}{\mathlarger{\mathlarger{\sum}}_{all\ segs}\ dur(seg) * N_{Ref}(seg)} $$
+
+\doublespacing
+\noindent Where \( dur(seg)\ \)is the duration of a segment, \( N_{Ref}(seg)\ \)the number of reference speakers in the segment, \( N_{Sys}(seg)\ \)the number of system speakers in the segment, and \( N_{Correct}(seg)\ \)the number of speakers that are correctly matched between reference and system speakers. The other two forms of error can be described similarly, replacing the numerator summation term accordingly.
+
+\singlespacing
+\subsubsection{Missed Speaker Time}
+
+\doublespacing
+Missed speaker time is the sum of the following, over all segments where more reference speakers are speaking than system speakers:
+
+\singlespacing
+$$ dur(seg) * (\  N_{Ref}(seg)\ -\ N_{Sys}(seg)\ )\ $$
+
+\subsubsection{False Alarm Time}
+
+\doublespacing
+False alarm time is represented by the negative of the same sum as the missed speaker time, but over all segments where more system speakers are speaking than reference speakers. The sum of these three errors give the total diarization error.
+
+\subsection{Assessment of Systems Using Diarization Error}
+
+\doublespacing
+The IberSPEECH 2016 conference \cite{ortega2016albayzin} and the ESTER-2 evaluation campaign \cite{galliano2009ester} have based their standards of evaluation on these criteria provided by NIST, in order to judge the performance of systems participating as submissions. For IberSPEECH 2016, NIST's standard Perl script was required \cite{NIST2006web}, for calculating the diarization error rate (DER), given that labels were in a specific format \cite{ortega2016albayzin}. The Rich Transcription Time Marked format (RTTM) was described as having the following layout for each segment of labelled speech, to be passed as an input to the \emph{md-eval-v21.pl} script. \par
+
+\bgroup
+\singlespacing
+\def\arraystretch{1.5}
+\begin{center}
+\begin{tabular}{| c | c | c | c | c | c | c | c | c | c |}
+\hline
+ SPEAKER & File & Ch & Beg\_Time & Dur & {\small <NA>} & {\small <NA>} & Spkr\_Label & {\small <NA>} & {\small <NA>} \\
+\hline
+\end{tabular}
+\end{center}
+\egroup
+
+\doublespacing
+\noindent Where:
+
+\begin{enumerate}
+\singlespacing
+\item{SPEAKER = A tag indicating that the segment contains information about a single segment of speech belonging to one individual.}
+\item{File = The name of the considered file.}
+\item{Ch = Refers to the channel, which is defaulted to 1.}
+\item{Beg\_Time = The beginning time of the segment, in seconds, measured from the start of the file.}
+\item{Dur = The duration of the segment, in seconds.}
+\item{Spkr\_Label = The label assigned to the speaker present in the considered segment.}
+\end{enumerate}
+
+\doublespacing
+\noindent Note here that the ``{\small <NA>}'' tags simply represent fields that are unused. Any time value in seconds was required to have a `.' decimal delimiter. \par
+For IberSPEECH 2016, the criteria from NIST's 2006 standards of DER were considered \cite{NIST2006web}, as opposed to the more recent criteria provided by NIST in 2009 \cite{NIST2009web}. What this meant for the DER calculation was that 250 millisecond time collars were employed around each reference segment, in order to forgive timing errors in the reference. This change, unique to the 2006 definitions, was due to segment times in the reference data provided at the time that were not created via a high accuracy process \cite{NIST2006web}, and therefore would have required for leniency in the error calculation. \par
+The Albayzin IberSPEECH 2016 guidelines also specify precisely how the command for how the \emph{md-eval-v21.pl} Perl script should be run in bash:
+
+\begin{lstlisting}
+perl md-eval-v21.pl -c 0.25 -r <REFERENCE>.rttm -s <SYSTEM_OUTPUT>.rttm
+\end{lstlisting}
+
+\noindent It is important to note here that there is a slight difference between NIST's and IberSPEECH 2016's guidelines here i.e. some tags are left out. This is likely due to the version of the Perl script mentioned being older than what is available now.
+
+\singlespacing
+\section{Examples of Diarization Systems}
+
+\doublespacing
+For broadcast news diarization, there exist many systems that have been built to achieve low error rates
+
+\singlespacing
+\section{DCU}
+
+\doublespacing
+This is advantageous, since the reference data from \cite{DCUref} is only accurate to the nearest whole second. \par
+\cite{DCUref} The reference data from DCU Political Science students...
